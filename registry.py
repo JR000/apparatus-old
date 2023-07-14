@@ -8,11 +8,11 @@ _registries: dict[str, Registry] = {}
 _default = None
 
 def get(field: str, registry_id=None):
-    if registry_id == None: _registry_id = _default
+    if registry_id is None: _registry_id = _default
     return _registries[_registry_id].get(field)
 
 def set(field: str, value, registry_id=None):
-    if registry_id == None: _registry_id = _default
+    if registry_id is None: _registry_id = _default
     _registries[_registry_id].set(field, value)
 
 def register(registry: Registry, name: str):
