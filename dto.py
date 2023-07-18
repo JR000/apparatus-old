@@ -212,3 +212,66 @@ class Card:
     title: String = field()
 print(Book(card=Card(title="i")))
 Book.id.equals("w")
+
+
+
+
+
+
+from dataclasses import dataclass, field
+from typing import Optional, List as _List
+
+class Searchable:
+    pass
+class Scalar(Searchable):
+    def equals(self, value):
+        pass
+class String(str, Scalar):
+    ...
+class Int(int, Scalar):
+    ...
+class Float(float, Scalar):
+    ...
+class List(_List, Searchable):
+    ...
+
+def annotation_from_type(annotation):
+    # if List
+    # if Optional
+
+def dto(cls):
+    default_map: dict = {}
+    validators_map: dict = {}
+
+    for name, annotation in cls.__annotations__.items():
+        _field = field()
+        if hasattr(cls, name):
+            _field = getattr(cls, name)
+        _type = annotation_from_type(annotation)
+        
+    def __init__(self, **kwargs):
+        pass
+    def __repr__(self):
+        pass
+    def __setattr__(self, name, value):
+        pass
+
+    cls.__init__ = __init__
+    cls.__repr__ = __repr__
+    cls.__setattr__ = __setattr__
+    
+    return cls
+
+
+def field(default = None, validators = []):
+    return (default, validators)
+
+@dto
+class Section:
+    id: Optional[String] # -> = field()
+    title: Optional[String] = field()
+
+    def __post_init__(self):
+        print(Section.id)
+        
+print(List[str].__args__)
