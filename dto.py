@@ -277,3 +277,10 @@ class Section:
 from dataclasses import dataclass, field
 dataclass
 print(List[str].__args__)
+
+"""
+Двигаться в сторону:
+разметка через простые типы
+использование dataclass 
+Searchable в качестве статической переменной
+"""
