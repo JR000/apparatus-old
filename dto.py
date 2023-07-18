@@ -217,7 +217,6 @@ Book.id.equals("w")
 
 
 
-
 from dataclasses import dataclass, field
 from typing import Optional, List as _List
 
@@ -263,8 +262,8 @@ def dto(cls):
     return cls
 
 
-def field(default = None, validators = []):
-    return (default, validators)
+# def field(default = None, validators = []):
+#     return (default, validators)
 
 @dto
 class Section:
@@ -274,4 +273,7 @@ class Section:
     def __post_init__(self):
         print(Section.id)
         
+
+from dataclasses import dataclass, field
+dataclass
 print(List[str].__args__)
