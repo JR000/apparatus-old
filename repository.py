@@ -1,20 +1,4 @@
 import dto
-
-class Logic:
-    pass
-
-class LogicGate(Logic):
-    content: list["Logic"]
-
-class OR(LogicGate):
-    pass
-class AND(LogicGate):
-    pass
-class NOT(LogicGate):
-    pass
-class Field(Logic):
-    # TODO
-    ...
     
 class Repository:
     def queryBooks(self, query: Logic) -> list[dto.Book]:
