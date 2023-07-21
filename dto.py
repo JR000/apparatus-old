@@ -1,8 +1,9 @@
 from uuid import UUID
 from dataclasses import dataclass
-from typing import Generic, TypeVar, List, Any, Optional
+from typing import Generic, TypeVar, List, Any, Optional, Union
 
 T = TypeVar('T')
+X = TypeVar('X')
 class Logic:
     ...
 class SpreadableLogic:
@@ -24,11 +25,11 @@ class FieldLogic(Logic):
 
 
 # TODO: typing check
-class Searchable(Generic[T]):
+class Searchable(Generic[X]):
     name: str
     def __init__(self, name: str = None):
         self.name = name
-    def equals(self, value : T) -> FieldLogic:
+    def equals(self, value : X) -> FieldLogic:
         return FieldLogic(self.name, 'equals', value)
     def has(self, *sublogic) -> FieldLogic:
         return FieldLogic(self.name, 'has', sublogic)
@@ -43,102 +44,102 @@ def searchable(cls):
         setattr(cls, name, Searchable(name=name))
     return cls
 
+QueryNode = Union[T, Searchable[T], Logic]
+
 @searchable
 @dataclass
 class Book:
-    id: UUID
-    title: str
-    author: str
-    cards: Optional[list["Card"]]
-    sections: Optional[list["Section"]]
-    tokens: Optional["Token"]
+    id: QueryNode[UUID]
+    title: QueryNode[str]
+    author: QueryNode[str]
+    cards: QueryNode[Optional[list["Card"]]]
+    sections: QueryNode[Optional[list["Section"]]]
+    tokens: QueryNode[Optional["Token"]]
 
 @searchable
 @dataclass
 class Card:
-    id: UUID
-    type: str
-    paragraphs: Optional[list["Paragraph"]]
-    ordinal: Optional[int]
-    parent: Optional["Section"]
-    carried_tokens: Optional[list["Token"]]
-    requirements: Optional[list["TokenRequirement"]]
+    id: QueryNode[UUID]
+    type: QueryNode[str]
+    paragraphs: QueryNode[Optional[list["Paragraph"]]]
+    ordinal: QueryNode[Optional[int]]
+    parent: QueryNode[Optional["Section"]]
+    carried_tokens: QueryNode[Optional[list["Token"]]]
+    requirements: QueryNode[Optional[list["TokenRequirement"]]]
 
 @searchable
 @dataclass
 class Token:
-    id: UUID
-    title: str
-    requirements: Optional[list["TokenRequirement"]]
-    cards_carry: Optional[list["Card"]]
+    id: QueryNode[UUID]
+    title: QueryNode[str]
+    requirements: QueryNode[Optional[list["TokenRequirement"]]]
+    cards_carry: QueryNode[Optional[list["Card"]]]
 
 @searchable
 @dataclass
 class Paragraph:
-    id: UUID
-    type: str
-    value: Any
-    ordinal: Optional[int]
+    id: QueryNode[UUID]
+    type: QueryNode[str]
+    value: QueryNode[Any]
+    ordinal: QueryNode[Optional[int]]
 
-    card: Optional["Card"]
-    parent: Optional["Paragraph"]
-    subparagrpahs: Optional[list["Paragraph"]]
+    card: QueryNode[Optional["Card"]]
+    parent: QueryNode[Optional["Paragraph"]]
+    subparagrpahs: QueryNode[Optional[list["Paragraph"]]]
 
 @searchable
 @dataclass
 class Section:
-    id: UUID
-    type: str
-    ordinal: int
+    id: QueryNode[UUID]
+    type: QueryNode[str]
+    ordinal: QueryNode[int]
 
-    subsections: Optional[list["Section"]]
-    parent: Optional["Section"]
-    cards: Optional[list["Card"]]
+    subsections: QueryNode[Optional[list["Section"]]]
+    parent: QueryNode[Optional["Section"]]
+    cards: QueryNode[Optional[list["Card"]]]
 
 @searchable
 @dataclass
 class TokenRequirement:
-    token: Optional["Token"]
-    card: Optional["Card"]
-    data: Optional[Any] # optional, потому что можно использовать и без: например, чтобы подчеркнуть наличие зависимости
+    token: QueryNode[Optional["Token"]]
+    card: QueryNode[Optional["Card"]]
+    data: QueryNode[Optional[Any]] # optional, потому что можно использовать и без: например, чтобы подчеркнуть наличие зависимости
 
 @searchable
 @dataclass
 class TokenSchedule:
-    token: Optional["Token"]
-    system: str
-    timastamp: Any # TODO: исправить типизацию
-    puzzle: Optional["CardPuzzle"]
-    data: Any # TODO: исправить типизацию
+    token: QueryNode[Optional["Token"]]
+    system: QueryNode[str]
+    timastamp: QueryNode[Any] # TODO: исправить типизацию
+    puzzle: QueryNode[Optional["CardPuzzle"]]
+    data: QueryNode[Any] # TODO: исправить типизацию
 
 @searchable
 @dataclass
 class CardSchedule:
-    card: Optional["Card"]
-    system: str
-    timastamp: Any # TODO: исправить типизацию
-    puzzle: Optional["CardPuzzle"]
-    data: Any # TODO: исправить типизацию
+    card: QueryNode[Optional["Card"]]
+    system: QueryNode[str]
+    timastamp: QueryNode[Any] # TODO: исправить типизацию
+    puzzle: QueryNode[Optional["CardPuzzle"]]
+    data: QueryNode[Any] # TODO: исправить типизацию
 
 @searchable
 @dataclass
 class CardPuzzle:
-    card: Optional["Card"]
-    quality: float
-    type: str
-    ppuzzles: Optional[list["ParagraphPuzzle"]]
+    card: QueryNode[Optional["Card"]]
+    quality: QueryNode[float]
+    type: QueryNode[str]
+    ppuzzles: QueryNode[Optional[list["ParagraphPuzzle"]]]
 
 @searchable
 @dataclass
 class ParagraphPuzzle:
-    paragraph: Optional["Paragraph"]
-    cardpuzzle: Optional["CardPuzzle"]
-    type: str
-    quality: Optional[float]
+    paragraph: QueryNode[Optional["Paragraph"]]
+    cardpuzzle: QueryNode[Optional["CardPuzzle"]]
+    type: QueryNode[str]
+    quality: QueryNode[Optional[float]]
 
     # TODO: how to save anwser?
-
-
 
 """
 Двигаться в сторону:
