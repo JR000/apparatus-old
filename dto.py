@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar, List, Any, Optional, Union
 
 T = TypeVar('T')
-X = TypeVar('X')
 class Logic:
     ...
 class SpreadableLogic:
@@ -25,11 +24,11 @@ class FieldLogic(Logic):
 
 
 # TODO: typing check
-class Searchable(Generic[X]):
+class Searchable(Generic[T]):
     name: str
     def __init__(self, name: str = None):
         self.name = name
-    def equals(self, value : X) -> FieldLogic:
+    def equals(self, value : T) -> FieldLogic:
         return FieldLogic(self.name, 'equals', value)
     def has(self, *sublogic) -> FieldLogic:
         return FieldLogic(self.name, 'has', sublogic)
@@ -46,9 +45,12 @@ def searchable(cls):
 
 QueryNode = Union[T, Searchable[T], Logic]
 
+class DTO:
+    ...
+
 @searchable
 @dataclass
-class Book:
+class Book(DTO):
     id: QueryNode[UUID]
     title: QueryNode[str]
     author: QueryNode[str]
@@ -58,7 +60,7 @@ class Book:
 
 @searchable
 @dataclass
-class Card:
+class Card(DTO):
     id: QueryNode[UUID]
     type: QueryNode[str]
     paragraphs: QueryNode[Optional[list["Paragraph"]]]
@@ -69,7 +71,7 @@ class Card:
 
 @searchable
 @dataclass
-class Token:
+class Token(DTO):
     id: QueryNode[UUID]
     title: QueryNode[str]
     requirements: QueryNode[Optional[list["TokenRequirement"]]]
@@ -77,7 +79,7 @@ class Token:
 
 @searchable
 @dataclass
-class Paragraph:
+class Paragraph(DTO):
     id: QueryNode[UUID]
     type: QueryNode[str]
     value: QueryNode[Any]
@@ -89,7 +91,7 @@ class Paragraph:
 
 @searchable
 @dataclass
-class Section:
+class Section(DTO):
     id: QueryNode[UUID]
     type: QueryNode[str]
     ordinal: QueryNode[int]
@@ -100,14 +102,14 @@ class Section:
 
 @searchable
 @dataclass
-class TokenRequirement:
+class TokenRequirement(DTO):
     token: QueryNode[Optional["Token"]]
     card: QueryNode[Optional["Card"]]
     data: QueryNode[Optional[Any]] # optional, потому что можно использовать и без: например, чтобы подчеркнуть наличие зависимости
 
 @searchable
 @dataclass
-class TokenSchedule:
+class TokenSchedule(DTO):
     token: QueryNode[Optional["Token"]]
     system: QueryNode[str]
     timastamp: QueryNode[Any] # TODO: исправить типизацию
@@ -116,7 +118,7 @@ class TokenSchedule:
 
 @searchable
 @dataclass
-class CardSchedule:
+class CardSchedule(DTO):
     card: QueryNode[Optional["Card"]]
     system: QueryNode[str]
     timastamp: QueryNode[Any] # TODO: исправить типизацию
@@ -125,7 +127,7 @@ class CardSchedule:
 
 @searchable
 @dataclass
-class CardPuzzle:
+class CardPuzzle(DTO):
     card: QueryNode[Optional["Card"]]
     quality: QueryNode[float]
     type: QueryNode[str]
@@ -133,7 +135,7 @@ class CardPuzzle:
 
 @searchable
 @dataclass
-class ParagraphPuzzle:
+class ParagraphPuzzle(DTO):
     paragraph: QueryNode[Optional["Paragraph"]]
     cardpuzzle: QueryNode[Optional["CardPuzzle"]]
     type: QueryNode[str]
