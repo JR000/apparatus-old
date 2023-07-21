@@ -1,8 +1,50 @@
-from sqlite3 import Time
-from typing import Optional
 from uuid import UUID
+from dataclasses import dataclass
+from typing import Generic, TypeVar, List, Any, Optional
+
+T = TypeVar('T')
+class Logic:
+    ...
+class SpreadableLogic:
+    content: List[Logic]
+    def __init__(self, *sublogic: List[Logic]):
+        self.content = sublogic
+class And(SpreadableLogic):
+    ...
+class Or(SpreadableLogic):
+    ...
+class Not(SpreadableLogic):
+    ...
+
+@dataclass
+class FieldLogic(Logic):
+    fieldname: str
+    method: str
+    content: Logic | Any
 
 
+# TODO: typing check
+class Searchable(Generic[T]):
+    name: str
+    def __init__(self, name: str = None):
+        self.name = name
+    def equals(self, value : T) -> FieldLogic:
+        return FieldLogic(self.name, 'equals', value)
+    def has(self, *sublogic) -> FieldLogic:
+        return FieldLogic(self.name, 'has', sublogic)
+    def regex(self, regex: str) -> FieldLogic:
+        return FieldLogic(self.name, 'regex', regex)
+    def among(self, values: list[Any]) -> FieldLogic:
+        return FieldLogic(self.name, 'among', values)
+
+
+def searchable(cls):
+    for name, _ in cls.__annotations__.items():
+        setattr(cls, name, Searchable(name=name))
+    return cls
+
+@searchable
+@dataclass
 class Book:
     id: UUID
     title: str
@@ -11,6 +53,8 @@ class Book:
     sections: Optional[list["Section"]]
     tokens: Optional["Token"]
 
+@searchable
+@dataclass
 class Card:
     id: UUID
     type: str
@@ -20,22 +64,28 @@ class Card:
     carried_tokens: Optional[list["Token"]]
     requirements: Optional[list["TokenRequirement"]]
 
+@searchable
+@dataclass
 class Token:
     id: UUID
     title: str
     requirements: Optional[list["TokenRequirement"]]
     cards_carry: Optional[list["Card"]]
 
+@searchable
+@dataclass
 class Paragraph:
     id: UUID
     type: str
-    value: any
+    value: Any
     ordinal: Optional[int]
 
     card: Optional["Card"]
     parent: Optional["Paragraph"]
     subparagrpahs: Optional[list["Paragraph"]]
 
+@searchable
+@dataclass
 class Section:
     id: UUID
     type: str
@@ -45,31 +95,41 @@ class Section:
     parent: Optional["Section"]
     cards: Optional[list["Card"]]
 
+@searchable
+@dataclass
 class TokenRequirement:
     token: Optional["Token"]
     card: Optional["Card"]
-    data: Optional[any] # optional, потому что можно использовать и без: например, чтобы подчеркнуть наличие зависимости
+    data: Optional[Any] # optional, потому что можно использовать и без: например, чтобы подчеркнуть наличие зависимости
 
+@searchable
+@dataclass
 class TokenSchedule:
     token: Optional["Token"]
     system: str
-    timastamp: any # TODO: исправить типизацию
+    timastamp: Any # TODO: исправить типизацию
     puzzle: Optional["CardPuzzle"]
-    data: any # TODO: исправить типизацию
+    data: Any # TODO: исправить типизацию
 
+@searchable
+@dataclass
 class CardSchedule:
     card: Optional["Card"]
     system: str
-    timastamp: any # TODO: исправить типизацию
+    timastamp: Any # TODO: исправить типизацию
     puzzle: Optional["CardPuzzle"]
-    data: any # TODO: исправить типизацию
+    data: Any # TODO: исправить типизацию
 
+@searchable
+@dataclass
 class CardPuzzle:
     card: Optional["Card"]
     quality: float
     type: str
     ppuzzles: Optional[list["ParagraphPuzzle"]]
 
+@searchable
+@dataclass
 class ParagraphPuzzle:
     paragraph: Optional["Paragraph"]
     cardpuzzle: Optional["CardPuzzle"]
@@ -77,206 +137,8 @@ class ParagraphPuzzle:
     quality: Optional[float]
 
     # TODO: how to save anwser?
-from typing import Any, Optional
-import sys
-
-"""
-typing:
-
-List == ([type])
-
-"""
-
-class CustomType:
-    pass
-
-class Scalar(CustomType):
-    def equals(self, a):
-        pass
-
-class String(str, Scalar):
-    def regex(self):
-        return
-
-class Int(int, Scalar):
-    pass 
-
-class Float(float, Scalar):
-    pass 
-
-class List(list):
-    def has(self):
-        pass
-
-def get_type_from_annotation(annotation):
-    # if is optional
-    if hasattr(annotation, '__args__') \
-        and len(annotation.__args__) == 2 \
-        and annotation.__args__[-1] is type(None):
-        return annotation.__args__[0]
-    # else:
-    return annotation
-
-def dto(target):
-    print(target.__module__)
-
-    types_map: dict[str, str] = {}
-    default_map: dict[str, object] = {}
-    validators_map: dict[str, list] = {}
-    for key, annotation in target.__annotations__.items():
-
-        if not hasattr(target, key):
-            print('continue', key)
-            continue # TODO
-
-        attr = getattr(target, key)
-        if not isinstance(attr, tuple):
-            raise TypeError() # TODO
-        
-        _default, validators = attr
-
-        _type = get_type_from_annotation(annotation)
-        types_map[key] = _type
-        default_map[key] = _default
-        validators_map[key] = validators
-        if not isinstance(_type, str) and issubclass(_type, CustomType):
-            setattr(target, key, _type())
-    
-
-    def is_attr_type_correct(name, value):
-        _type = types_map[name]
-
-        if isinstance(_type, str):
-            module = sys.modules[target.__module__]
-            if not hasattr(module, name):
-                return False # TODO: change to Error
-            _type = getattr(module, name)
-            types_map[name] = _type            
-        return isinstance(value, _type) or issubclass(_type, type(value))
-    
-    def clone(v):
-        return v
-
-    def __init__(self, **kwargs):
-        for key, item in target.__annotations__.items():
-            # add frozen 
-
-            if key not in kwargs and key not in default_map:
-                raise AttributeError(f"The attribute '{key}' has no default value")
-            if key not in kwargs:
-                setattr(self, key, clone(default_map[key]))
-            else:
-                setattr(self, key, kwargs[key])
-
-    def __setattr__(self, name, value):
-        if not is_attr_type_correct(name, value):
-            raise TypeError() # TODO
-
-        if name in validators_map:
-            for validator in validators_map[name]:
-                if not validator(value):
-                    raise AttributeError(f"Validation failed for the attribute '{name}'")
-        super(target, self).__setattr__(name, value)
-
-    # TODO: add nested __repr__ ? 
-    def __repr__(self):
-        return f"{target.__name__}({', '.join([name +  '=' + val.__repr__() for name, val in self.__dict__.items()])})"
-
-    target.__init__ = __init__
-    target.__setattr__ = __setattr__
-    target.__repr__ = __repr__
-
-    return target   
 
 
-def field(_default: Any = None, validators: list = []):
-    return (
-        _default,
-        validators
-    ) 
-
-import typing
-import dataclasses
-dataclasses.dataclass
-
-@dto
-class Book:
-    id: Optional[String] = field(_default="") # -> String() //default[id] = default
-    title: String = field(_default="")
-    card: "Card" = field()
-    tokens: List["Token"]
-    titles: List[String]
-
-@dto
-class Card:
-    title: String = field()
-print(Book(card=Card(title="i")))
-Book.id.equals("w")
-
-
-
-
-
-from dataclasses import dataclass, field
-from typing import Optional, List as _List
-
-class Searchable:
-    pass
-class Scalar(Searchable):
-    def equals(self, value):
-        pass
-class String(str, Scalar):
-    ...
-class Int(int, Scalar):
-    ...
-class Float(float, Scalar):
-    ...
-class List(_List, Searchable):
-    ...
-
-def annotation_from_type(annotation):
-    # if List
-    # if Optional
-
-def dto(cls):
-    default_map: dict = {}
-    validators_map: dict = {}
-
-    for name, annotation in cls.__annotations__.items():
-        _field = field()
-        if hasattr(cls, name):
-            _field = getattr(cls, name)
-        _type = annotation_from_type(annotation)
-        
-    def __init__(self, **kwargs):
-        pass
-    def __repr__(self):
-        pass
-    def __setattr__(self, name, value):
-        pass
-
-    cls.__init__ = __init__
-    cls.__repr__ = __repr__
-    cls.__setattr__ = __setattr__
-    
-    return cls
-
-
-# def field(default = None, validators = []):
-#     return (default, validators)
-
-@dto
-class Section:
-    id: Optional[String] # -> = field()
-    title: Optional[String] = field()
-
-    def __post_init__(self):
-        print(Section.id)
-        
-
-from dataclasses import dataclass, field
-dataclass
-print(List[str].__args__)
 
 """
 Двигаться в сторону:
