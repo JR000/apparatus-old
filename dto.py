@@ -1,6 +1,6 @@
-from uuid import UUID
 from dataclasses import dataclass
-from typing import Generic, TypeVar, List, Any, Optional, Union
+from typing import Generic, TypeVar, List, Any, Optional, Union, Dict
+from datetime import datetime
 
 T = TypeVar('T')
 class Logic:
@@ -43,109 +43,109 @@ def searchable(cls):
         setattr(cls, name, Searchable(name=name))
     return cls
 
-QueryNode = Union[T, Searchable[T], Logic]
+QueryNode = Union[Optional[T], Searchable[T], Logic]
 
 class DTO:
     ...
-
+    
 @searchable
 @dataclass
 class Book(DTO):
-    id: QueryNode[UUID]
+    id: QueryNode[int]
     title: QueryNode[str]
     author: QueryNode[str]
-    cards: QueryNode[Optional[list["Card"]]]
-    sections: QueryNode[Optional[list["Section"]]]
-    tokens: QueryNode[Optional["Token"]]
-
-@searchable
-@dataclass
-class Card(DTO):
-    id: QueryNode[UUID]
-    type: QueryNode[str]
-    paragraphs: QueryNode[Optional[list["Paragraph"]]]
-    ordinal: QueryNode[Optional[int]]
-    parent: QueryNode[Optional["Section"]]
-    carried_tokens: QueryNode[Optional[list["Token"]]]
-    requirements: QueryNode[Optional[list["TokenRequirement"]]]
-
-@searchable
-@dataclass
-class Token(DTO):
-    id: QueryNode[UUID]
-    title: QueryNode[str]
-    requirements: QueryNode[Optional[list["TokenRequirement"]]]
-    cards_carry: QueryNode[Optional[list["Card"]]]
-
-@searchable
-@dataclass
-class Paragraph(DTO):
-    id: QueryNode[UUID]
-    type: QueryNode[str]
-    value: QueryNode[Any]
-    ordinal: QueryNode[Optional[int]]
-
-    card: QueryNode[Optional["Card"]]
-    parent: QueryNode[Optional["Paragraph"]]
-    subparagrpahs: QueryNode[Optional[list["Paragraph"]]]
-
+    cards: QueryNode[list["Card"]]
+    sections: QueryNode[list["Section"]]
+    tokens: QueryNode[list["Token"]]
+    
 @searchable
 @dataclass
 class Section(DTO):
-    id: QueryNode[UUID]
+    id: QueryNode[int]
+    title: QueryNode[str]
     type: QueryNode[str]
     ordinal: QueryNode[int]
-
-    subsections: QueryNode[Optional[list["Section"]]]
-    parent: QueryNode[Optional["Section"]]
-    cards: QueryNode[Optional[list["Card"]]]
-
+    book: QueryNode["Book"]
+    parent: QueryNode["Section"]
+    subsections: QueryNode[Dict[int, "Section"]]
+    cards: QueryNode[list["Card"]]
+    
 @searchable
 @dataclass
-class TokenRequirement(DTO):
-    token: QueryNode[Optional["Token"]]
-    card: QueryNode[Optional["Card"]]
-    data: QueryNode[Optional[Any]] # optional, потому что можно использовать и без: например, чтобы подчеркнуть наличие зависимости
+class Card(DTO):
+    id: QueryNode[int]
+    type: QueryNode[str]
+    title: QueryNode[str]
+    book: QueryNode["Book"]
+    section: QueryNode["Section"]
+    paragraphs: QueryNode[list["Paragraph"]]
+    cardpuzzles: QueryNode[list["CardPuzzle"]]
+    cardschedules: QueryNode[list["CardSchedule"]]
+    requirements: QueryNode[list["TokenRequirement"]]
+    carried_tokens: QueryNode[list["Token"]]
+    
+@searchable
+@dataclass
+class Paragraph(DTO):
+    id: QueryNode[int]
+    card: QueryNode["Card"]
+    type: QueryNode[str]
+    value: QueryNode[str]
+    parent: QueryNode["Paragraph"]
+    subparagraphs: QueryNode[Dict[int, "Paragraph"]]
+    paragraphpuzzles: QueryNode[list["ParagraphPuzzle"]]
+    
+@searchable
+@dataclass
+class Token(DTO):
+    id: QueryNode[int]
+    title: QueryNode[str]
+    book: QueryNode["Book"]
+    tokenschedules: QueryNode[list["TokenSchedule"]]
+    requirements: QueryNode[list["TokenRequirement"]]
+    carriers: QueryNode[list["Card"]]
+    
+@searchable
+@dataclass
+class CardPuzzle(DTO):
+    id: QueryNode[int]
+    type: QueryNode[str]
+    quality: QueryNode[float]
+    timestamp: QueryNode[datetime]
+    card: QueryNode["Card"]
+    paragraphpuzzles: QueryNode["ParagraphPuzzle"]
+    cardschedules: QueryNode[list["CardSchedule"]]
+    tokenschedules: QueryNode[list["TokenSchedule"]]
+    
+@searchable
+@dataclass
+class ParagraphPuzzle(DTO):
+    id: QueryNode[int]
+    type: QueryNode[str]
+    quality: QueryNode[float]
+    paragraph: QueryNode["Paragraph"]
+    cardpuzzle: QueryNode["CardPuzzle"]
+    
+@searchable
+@dataclass
+class CardSchedule(DTO):
+    id: QueryNode[int]
+    system: QueryNode[str]
+    timestamp: QueryNode[datetime]
+    card: QueryNode["Card"]
+    cardpuzzle: QueryNode["CardPuzzle"]
 
 @searchable
 @dataclass
 class TokenSchedule(DTO):
-    token: QueryNode[Optional["Token"]]
+    id: QueryNode[int]
     system: QueryNode[str]
-    timastamp: QueryNode[Any] # TODO: исправить типизацию
-    puzzle: QueryNode[Optional["CardPuzzle"]]
-    data: QueryNode[Any] # TODO: исправить типизацию
-
+    timestamp: QueryNode[datetime]
+    token: QueryNode["Token"]
+    cardpuzzle: QueryNode["CardPuzzle"]
+    
 @searchable
 @dataclass
-class CardSchedule(DTO):
-    card: QueryNode[Optional["Card"]]
-    system: QueryNode[str]
-    timastamp: QueryNode[Any] # TODO: исправить типизацию
-    puzzle: QueryNode[Optional["CardPuzzle"]]
-    data: QueryNode[Any] # TODO: исправить типизацию
-
-@searchable
-@dataclass
-class CardPuzzle(DTO):
-    card: QueryNode[Optional["Card"]]
-    quality: QueryNode[float]
-    type: QueryNode[str]
-    ppuzzles: QueryNode[Optional[list["ParagraphPuzzle"]]]
-
-@searchable
-@dataclass
-class ParagraphPuzzle(DTO):
-    paragraph: QueryNode[Optional["Paragraph"]]
-    cardpuzzle: QueryNode[Optional["CardPuzzle"]]
-    type: QueryNode[str]
-    quality: QueryNode[Optional[float]]
-
-    # TODO: how to save anwser?
-
-"""
-Двигаться в сторону:
-разметка через простые типы
-использование dataclass 
-Searchable в качестве статической переменной
-"""
+class TokenRequirement(DTO):
+    token: QueryNode["Token"]
+    card: QueryNode["Card"]
